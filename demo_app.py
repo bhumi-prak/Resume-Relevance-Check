@@ -8,6 +8,7 @@ import datetime
 import altair as alt
 import re
 import numpy as np
+import hashlib
 
 # NEW imports
 import pdfplumber
@@ -20,6 +21,10 @@ DB_PATH = Path("resume_relevance.db")
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
+def get_file_hash(file_bytes):
+    return hashlib.sha256(file_bytes).hexdigest()
+
+
 # ---------- DB helpers ----------
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -31,7 +36,11 @@ def init_db():
     ''')
     c.execute('''
     CREATE TABLE IF NOT EXISTS resumes (
-        id TEXT PRIMARY KEY, filename TEXT, filepath TEXT, uploaded_at TEXT
+        id TEXT PRIMARY KEY, 
+        filename TEXT, 
+        filepath TEXT, 
+        file_hash TEXT UNIQUE,
+        uploaded_at TEXT
     )
     ''')
     c.execute('''
@@ -42,6 +51,20 @@ def init_db():
     ''')
     conn.commit()
     conn.close()
+
+def migrate_add_filehash():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    try:
+        c.execute("ALTER TABLE resumes ADD COLUMN file_hash TEXT UNIQUE")
+        conn.commit()
+        print("✅ Added file_hash column to resumes table")
+    except sqlite3.OperationalError:
+        # column already exists
+        print("ℹ️ file_hash column already exists")
+    finally:
+        conn.close()
+
 
 def insert_job(job_id, title, jd_text):
     conn = sqlite3.connect(DB_PATH)
@@ -57,13 +80,23 @@ def list_jobs():
     conn.close()
     return df
 
-def insert_resume(res_id, filename, filepath):
+def insert_resume(res_id, filename, filepath, file_bytes):
+    file_hash = get_file_hash(file_bytes)
+
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute('INSERT INTO resumes (id,filename,filepath,uploaded_at) VALUES (?,?,?,?)',
-              (res_id,filename,filepath, datetime.datetime.utcnow().isoformat()))
-    conn.commit()
-    conn.close()
+    try:
+        c.execute('''
+            INSERT INTO resumes (id, filename, filepath, file_hash, uploaded_at)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (res_id, filename, filepath, file_hash, datetime.datetime.utcnow().isoformat()))
+        conn.commit()
+    except sqlite3.IntegrityError:
+        # Resume with same hash already exists
+        print(f"⚠️ Duplicate skipped: {filename}")
+    finally:
+        conn.close()
+
 
 def list_resumes():
     conn = sqlite3.connect(DB_PATH)
@@ -186,6 +219,21 @@ with st.sidebar:
     if st.button("Export Shortlist (CSV)"):
         st.info("Export will include evaluated results for selected job.")
 
+    # 🔑 NEW: Clear All Data button
+    if st.button("Clear All Data"):
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("DELETE FROM evaluations")
+        conn.execute("DELETE FROM resumes")
+        conn.execute("DELETE FROM jobs")
+        conn.commit()
+        conn.close()
+
+        # Optionally clear uploaded files
+        for f in UPLOAD_DIR.glob("*"):
+            f.unlink()
+
+        st.warning("All jobs, resumes, evaluations, and uploaded files have been cleared.")
+
 # MAIN: job create / JD editor
 col1, col2 = st.columns([2,1])
 
@@ -234,10 +282,12 @@ with col2:
     if uploaded_resume:
         for f in uploaded_resume:
             res_id = str(uuid.uuid4())
+            file_bytes = f.read()
             p = UPLOAD_DIR / f"resume_{res_id}_{f.name}"
-            p.write_bytes(f.read())
-            insert_resume(res_id, f.name, str(p))
-        st.success("Uploaded resumes.")
+            p.write_bytes(file_bytes)
+            # insert into DB with hash check
+            insert_resume(res_id, f.name, str(p), file_bytes)
+        st.success("Uploaded resumes (duplicates skipped automatically).")
 
 st.markdown("---")
 # Evaluation area
@@ -258,6 +308,12 @@ with colA:
             if resumes_df.empty:
                 st.warning("No resumes uploaded.")
             else:
+                # 🔑 FIX: Clear old evaluations for this job before inserting new ones
+                conn = sqlite3.connect(DB_PATH)
+                conn.execute("DELETE FROM evaluations WHERE job_id=?", (job_id,))
+                conn.commit()
+                conn.close()
+
                 progress = st.progress(0)
                 total = len(resumes_df)
                 for i, row in resumes_df.iterrows():
@@ -266,7 +322,7 @@ with colA:
                     eval_id = str(uuid.uuid4())
                     insert_evaluation(eval_id, job_id, row["id"], score, verdict, missing, suggestions)
                     progress.progress(int((i+1)/total*100))
-                st.success(f"Evaluated {len(resumes_df)} resumes for job '{job_selected}'.")
+                st.success(f"Evaluated {len(resumes_df)} resumes for job '{job_selected}' (previous evaluations cleared).")
 
 with colB:
     st.markdown("**Quick analytics**")
@@ -292,3 +348,4 @@ if job_selected and job_selected != "-- select job --":
         st.altair_chart(chart, use_container_width=True)
 else:
     st.info("Select a job to view evaluations.")
+

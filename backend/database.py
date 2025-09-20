@@ -56,18 +56,30 @@ def init_db():
 def insert_job(id, title, description):
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("INSERT OR REPLACE INTO jobs (id, title, description) VALUES (?, ?, ?)", 
-                (id, title, description))
-    conn.commit()
-    conn.close()
+    try:
+        cur.execute("INSERT INTO jobs (id, title, description) VALUES (?, ?, ?)", 
+                    (id, title, description))
+        conn.commit()
+    except sqlite3.IntegrityError:
+        print("⚠️ Duplicate job ignored:", title)
+    finally:
+        conn.close()
 
-def insert_resume(id, job_id, name, college, location, resume_text):
+
+def insert_resume(id, job_id, name, college, location, resume_text, file_hash):
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("INSERT OR REPLACE INTO resumes (id, job_id, name, college, location, resume_text) VALUES (?, ?, ?, ?, ?, ?)",
-                (id, job_id, name, college, location, resume_text))
-    conn.commit()
-    conn.close()
+    try:
+        cur.execute("""
+            INSERT INTO resumes (id, job_id, name, college, location, resume_text, file_hash) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (id, job_id, name, college, location, resume_text, file_hash))
+        conn.commit()
+    except sqlite3.IntegrityError:
+        print("⚠️ Duplicate resume ignored:", name)
+    finally:
+        conn.close()
+
 
 def init_db():
     os.makedirs("database", exist_ok=True)

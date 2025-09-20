@@ -1,7 +1,15 @@
 # app.py
+import sqlite3
 import streamlit as st
 from backend.database import init_db
 from frontend.pages import home, dashboard, login
+import hashlib
+
+
+
+
+DB_PATH = "database/resume_checker.db"
+
 
 # -------------------------------
 # 1. App Config
@@ -11,8 +19,51 @@ st.set_page_config(
     layout="wide"
 )
 
+def get_file_hash(file_bytes):
+    return hashlib.sha256(file_bytes).hexdigest()
+
 # Initialize Database
-init_db()
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+
+    # Jobs table
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS jobs (
+        id TEXT PRIMARY KEY,
+        title TEXT,
+        jd_text TEXT,
+        created_at TEXT
+    )
+    ''')
+
+    # Resumes table with file_hash
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS resumes (
+        id TEXT PRIMARY KEY,
+        filename TEXT,
+        filepath TEXT,
+        file_hash TEXT UNIQUE,   -- ✅ unique hash per resume file
+        uploaded_at TEXT
+    )
+    ''')
+
+    # Evaluations table
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS evaluations (
+        id TEXT PRIMARY KEY,
+        job_id TEXT,
+        resume_id TEXT,
+        score REAL,
+        verdict TEXT,
+        missing TEXT,
+        suggestions TEXT,
+        created_at TEXT
+    )
+    ''')
+    conn.commit()
+    conn.close()
+
 
 # -------------------------------
 # 2. Session State Initialization
