@@ -1,0 +1,15 @@
+streamlit
+openai
+langchain
+faiss-cpu
+pdfplumber
+python-docx
+docx2txt
+spacy
+fuzzywuzzy
+python-Levenshtein
+pandas
+sqlalchemy
+tqdm
+python-dotenv
+requests

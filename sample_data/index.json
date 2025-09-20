@@ -1,0 +1,81 @@
+{
+  "jobs": [
+    {
+      "id": 1,
+      "title": "Data Scientist",
+      "description": "Looking for a Data Scientist with skills in Python, SQL, Machine Learning, and AWS."
+    }
+  ],
+  "resumes": [
+    {
+      "id": 1,
+      "name": "Alice Sharma",
+      "college": "IIT Delhi",
+      "location": "Delhi",
+      "file_path": "resumes/resume1.pdf"
+    },
+    {
+      "id": 2,
+      "name": "Bob Mehta",
+      "college": "BMS College",
+      "location": "Bangalore",
+      "file_path": "resumes/resume2.docx"
+    },
+    {
+      "id": 3,
+      "name": "Charlie Singh",
+      "college": "MIT Pune",
+      "location": "Pune",
+      "file_path": "resumes/resume3.pdf"
+    },
+    {
+      "id": 4,
+      "name": "Divya Patel",
+      "college": "NIT Surat",
+      "location": "Surat",
+      "file_path": "resumes/resume4.docx"
+    },
+    {
+      "id": 5,
+      "name": "Esha Kapoor",
+      "college": "IIT Bombay",
+      "location": "Mumbai",
+      "file_path": "resumes/resume5.pdf"
+    },
+    {
+      "id": 6,
+      "name": "Farhan Ali",
+      "college": "BITS Pilani",
+      "location": "Hyderabad",
+      "file_path": "resumes/resume6.docx"
+    },
+    {
+      "id": 7,
+      "name": "Gaurav Reddy",
+      "college": "IIIT Hyderabad",
+      "location": "Hyderabad",
+      "file_path": "resumes/resume7.pdf"
+    },
+    {
+      "id": 8,
+      "name": "Hema Nair",
+      "college": "NIT Trichy",
+      "location": "Trichy",
+      "file_path": "resumes/resume8.docx"
+    },
+    {
+      "id": 9,
+      "name": "Ishan Verma",
+      "college": "IIT Kanpur",
+      "location": "Kanpur",
+      "file_path": "resumes/resume9.pdf"
+    },
+    {
+      "id": 10,
+      "name": "Jaya Singh",
+      "college": "VIT Vellore",
+      "location": "Vellore",
+      "file_path": "resumes/resume10.docx"
+    }
+  ]
+}
