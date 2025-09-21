@@ -13,8 +13,8 @@ import hashlib
 # NEW imports
 import pdfplumber
 import docx
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity as sklearn_cosine
+from sklearn.feature_extraction.text import TfidfVectorizer # type: ignore
+from sklearn.metrics.pairwise import cosine_similarity as sklearn_cosine # type: ignore
 
 # ---------- CONFIG ----------
 DB_PATH = Path("resume_relevance.db")
